@@ -1,0 +1,116 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  avatar    String?
+  role      String   @default("Founder") // "Founder", "VC / Mentor", "Cohort Peer"
+  bio       String?
+  githubUrl String?
+  pitches   Pitch[]
+  reviews   Review[]
+  upvotes   Upvote[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Pitch {
+  id              String         @id @default(cuid())
+  userId          String
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title           String
+  tagline         String
+  category        String         // "AI & DevTools", "FinTech", "SaaS & Productivity", "Health & Bio", "Marketplace"
+  stage           String         // "Idea", "MVP", "Launched", "Growth"
+  targetMinutes   Float          @default(3.0)
+  scriptContent   String
+  slidesData      String?        // JSON string of 7-slide deck
+  demoUrl         String?
+  repoUrl         String?
+  overallScore    Int            @default(0)
+  hookScore       Int            @default(0)
+  problemScore    Int            @default(0)
+  marketScore     Int            @default(0)
+  techScore       Int            @default(0)
+  deliveryScore   Int            @default(0)
+  wordsPerMinute  Int            @default(140)
+  viewCount       Int            @default(0)
+  upvoteCount     Int            @default(0)
+  isPublished     Boolean        @default(true)
+  analysis        PitchAnalysis?
+  reviews         Review[]
+  upvotes         Upvote[]
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model PitchAnalysis {
+  id                    String   @id @default(cuid())
+  pitchId               String   @unique
+  pitch                 Pitch    @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  overallScore          Int
+  hookScore             Int
+  problemScore          Int
+  marketScore           Int
+  techScore             Int
+  deliveryScore         Int
+  estimatedMinutes      Float
+  wordCount             Int
+  wordsPerMinute        Int
+  hookCritique          String
+  problemCritique       String
+  marketCritique        String
+  techCritique          String
+  deliveryCritique      String
+  punchyHookSuggestions String   // JSON array of 3 alternative hooks
+  investorQa            String   // JSON array of 4 grilling questions + answers
+  actionPlan            String   // JSON array of top improvement steps
+  createdAt             DateTime @default(now())
+}
+
+model Review {
+  id              String   @id @default(cuid())
+  pitchId         String
+  pitch           Pitch    @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  reviewerId      String
+  reviewer        User     @relation(fields: [reviewerId], references: [id], onDelete: Cascade)
+  rating          Int      // 1-5
+  hookRating      Int      // 1-5
+  clarityRating   Int      // 1-5
+  viabilityRating Int      // 1-5
+  feedback        String
+  upvotes         Int      @default(0)
+  createdAt       DateTime @default(now())
+}
+
+model Upvote {
+  id        String   @id @default(cuid())
+  pitchId   String
+  pitch     Pitch    @relation(fields: [pitchId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([pitchId, userId])
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  userName    String
+  action      String   // "SUBMITTED_PITCH", "REVIEWED_PITCH", "UPVOTED", "ANALYZED"
+  targetTitle String
+  details     String?
+  createdAt   DateTime @default(now())
+}
